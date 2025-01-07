@@ -9,6 +9,7 @@ A minimal Chrome extension template built with React and Mantine UI. This templa
 - **Modern Build System**: Uses Vite for fast development and builds
 - **TypeScript Support**: Includes TypeScript configurations
 - **Notification System**: Demonstrates Mantine's notification system
+- **Tabler Icons**: Integrated with Mantine UI
 
 ## Getting Started
 
@@ -42,8 +43,6 @@ A minimal Chrome extension template built with React and Mantine UI. This templa
 ├── manifest.json        # Extension manifest
 ├── vite.config.js       # Vite configuration
 └── manifest.json        # Extension manifest
-└── tailwind.config.js   # Tailwind CSS configuration
-└── postcss.config.js    # PostCSS configuration
 └── icon.png             # Extension icon
 └── PRIVACY.md           # Privacy policy
 └── README.md            # Project README

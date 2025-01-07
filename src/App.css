@@ -1,0 +1,23 @@
+.dark-mode {
+  background-color: #121212;
+  color: #ffffff;
+}
+
+.dark-mode .mantine-Paper-root {
+  background-color: #1e1e1e;
+  color: #ffffff;
+  border-color: #2c2c2c;
+}
+
+.dark-mode .mantine-ActionIcon-root {
+  color: #ffffff;
+}
+
+.dark-mode .mantine-Text-root {
+  color: #ffffff;
+}
+
+.dark-mode .mantine-Badge-root {
+  background-color: #2c2c2c;
+  color: #ffffff;
+}

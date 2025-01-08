@@ -18,15 +18,11 @@ A minimal Chrome extension template built with React and Mantine UI. This templa
    ```bash
    npm install
    ```
-3. Start development server:
-   ```bash
-   npm run dev
-   ```
-4. Build the extension:
+3. Build the extension:
    ```bash
    npm run build
    ```
-5. Load the extension:
+4. Load the extension:
    - Open Chrome and go to `chrome://extensions/`
    - Enable "Developer mode"
    - Click "Load unpacked" and select the `dist` directory

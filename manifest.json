@@ -3,7 +3,7 @@
   "name": "Chrome Extension Template",
   "version": "1.0",
   "description": "A template Chrome extension built with Mantine UI",
-  "permissions": ["storage"],
+  "permissions": [],
   "action": {
     "default_popup": "index.html",
     "default_icon": {

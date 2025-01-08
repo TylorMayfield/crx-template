@@ -39,7 +39,7 @@ jobs:
         id: version
         run: |
           # Get the most recent tag or default to v0.0.1 if no tag exists
-          VERSION_TAG=$(git describe --tags --abbrev=0 || echo "v0.0.1")
+          VERSION_TAG=$(git describe --tags --abbrev=0 || echo "v0.0.2")
           # Increment the patch version by 1
           VERSION=$(echo $VERSION_TAG | awk -F. -v OFS=. '{$NF++;print}')
           echo "New version: $VERSION"

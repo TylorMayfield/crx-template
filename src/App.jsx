@@ -13,7 +13,12 @@ import {
 import { useColorScheme } from "@mantine/hooks";
 import { Notifications } from "@mantine/notifications";
 import { notifications } from "@mantine/notifications";
-import { IconSun, IconMoon } from '@tabler/icons-react';
+import {
+  IconSun,
+  IconMoon,
+  IconBrandGithub,
+  IconBrandChrome,
+} from "@tabler/icons-react";
 import "./App.css";
 
 function App() {
@@ -21,7 +26,7 @@ function App() {
   const { colorScheme, toggleColorScheme } = useMantineColorScheme({
     defaultValue: preferredColorScheme,
   });
-  const dark = colorScheme === 'dark';
+  const dark = colorScheme === "dark";
 
   const showNotification = () => {
     notifications.show({
@@ -30,6 +35,41 @@ function App() {
       color: "blue",
     });
   };
+
+  function Footer() {
+    return (
+      <footer
+        style={{
+          marginTop: "auto",
+          padding: "10px",
+          textAlign: "center",
+        }}
+      >
+        <Group align="center" justify="center" spacing="sm">
+          <Text
+            size="sm"
+            style={{ display: "inline-flex", alignItems: "center" }}
+          >
+            <a
+              href="https://github.com/TylorMayfield/crx-template"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ marginRight: "10px" }}
+            >
+              <IconBrandGithub />
+            </a>
+            <a
+              href="https://chromewebstore.google.com/detail/chrome-extension-template/mechhnlbchididihbgadhfokjnbhfbed"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <IconBrandChrome />
+            </a>
+          </Text>
+        </Group>
+      </footer>
+    );
+  }
 
   return (
     <MantineProvider
@@ -57,7 +97,7 @@ function App() {
                 </Text>
                 <ActionIcon
                   variant="outline"
-                  color={dark ? 'yellow' : 'blue'}
+                  color={dark ? "yellow" : "blue"}
                   onClick={() => toggleColorScheme()}
                   title="Toggle color scheme"
                 >
@@ -67,12 +107,12 @@ function App() {
               <Text color="dimmed" size="sm" align="center" mb="xl">
                 Built with Mantine UI
               </Text>
-              <Group position="center" spacing="sm">
-                <Button variant="filled" onClick={showNotification}>
+              <Group align="center" justify="center" spacing="sm">
+                <Button variant="light" onClick={showNotification}>
                   Show Notification
                 </Button>
-                <Button variant="light">Another Button</Button>
               </Group>
+              <Footer />
             </Card>
           </Stack>
         </AppShell>

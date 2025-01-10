@@ -48,6 +48,11 @@ A minimal Chrome extension template built with React and Mantine UI. This templa
 
 ```
 
+## Links
+
+- [GitHub Repository](https://github.com/TylorMayfield/crx-template)
+- [Chrome Web Store](https://chromewebstore.google.com/detail/chrome-extension-template/mechhnlbchididihbgadhfokjnbhfbed)
+
 ## Customization
 
 The template uses Mantine UI's theme system. You can customize the theme in `App.jsx`:
@@ -60,3 +65,8 @@ The template uses Mantine UI's theme system. You can customize the theme in `App
   }}
 >
 ```
+
+## Links
+
+- [GitHub Repository](https://github.com/TylorMayfield/crx-template)
+- [Chrome Web Store](https://chromewebstore.google.com/detail/chrome-extension-template/mechhnlbchididihbgadhfokjnbhfbed)

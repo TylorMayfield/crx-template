@@ -52,6 +52,17 @@ jobs:
           git config --global user.email "hello@otter-labs.com"
           git config --global user.name "Release Bot"
 
+      - name: Create new version tag and push changes
+        run: |
+          # Create a new version tag
+          git tag v${{ env.version }}
+          git push origin v${{ env.version }}
+
+          # Commit the changes to manifest.json and package.json
+          git add manifest.json package.json
+          git commit -m "Bump version to v${{ env.version }}"
+          git push origin HEAD
+
       - name: Zip extension
         run: |
           cd dist
@@ -67,13 +78,4 @@ jobs:
           prerelease: false
           generate_release_notes: true
 
-      - name: Create new version tag and push changes
-        run: |
-          # Create a new version tag
-          git tag v${{ env.version }}
-          git push origin v${{ env.version }}
 
-          # Commit the changes to manifest.json and package.json
-          git add manifest.json package.json
-          git commit -m "Bump version to v${{ env.version }}"
-          git push origin HEAD

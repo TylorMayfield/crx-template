@@ -2,9 +2,6 @@ name: Build and Release Extension
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - "v*.*.*" # Trigger on version tags like v1.0.0
 
 permissions:
   contents: write
@@ -15,44 +12,51 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the repository code
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Setup Node.js environment with caching for faster builds
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "18"
           cache: "npm"
 
-      # Install dependencies with 'npm ci' for a clean install
       - name: Install dependencies
         run: npm ci
 
-      # Build the extension
       - name: Build extension
         run: npm run build
 
-      # Generate a version number based on the most recent tag
       - name: Generate version number
         id: version
         run: |
-          # Get the most recent tag or default to v0.0.1 if no tag exists
-          VERSION_TAG=$(git describe --tags --abbrev=0 || echo "v0.0.3")
-          # Increment the patch version by 1
-          VERSION=$(echo $VERSION_TAG | awk -F. -v OFS=. '{$NF++;print}')
+          # Get the most recent tag or use the current date/commit if no tag is found
+          VERSION_TAG=$(git describe --tags --abbrev=0 || echo "v1.0.1")
+          # Increment patch version
+          VERSION=$(echo $VERSION_TAG | awk -F. -v OFS=. '{$NF++;print}' | sed 's/v//')
           echo "New version: $VERSION"
-          # Set the version as an environment variable for later steps
           echo "version=$VERSION" >> $GITHUB_ENV
 
-      # Zip the extension files from the 'dist' directory
+      - name: Update manifest.json version
+        run: |
+          # Update version in manifest.json
+          jq --arg version "${{ env.version }}" '.version = $version' manifest.json > manifest_temp.json && mv manifest_temp.json manifest.json
+
+      - name: Update package.json version
+        run: |
+          # Update version in package.json
+          jq --arg version "${{ env.version }}" '.version = $version' package.json > package_temp.json && mv package_temp.json package.json
+
+      - name: Set Git author identity
+        run: |
+          git config --global user.email "hello@otter-labs.com"
+          git config --global user.name "Release Bot"
+
       - name: Zip extension
         run: |
           cd dist
           zip -r ../extension.zip *
 
-      # Create a new release with the zipped extension
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v1
@@ -63,10 +67,13 @@ jobs:
           prerelease: false
           generate_release_notes: true
 
-      # Push the new version tag to the repository
-      - name: Push new version tag
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Create new version tag and push changes
         run: |
-          # Ensure the tag only gets pushed for a new tag event (not on branch pushes)
-          git tag ${{ env.version }}
-          git push origin ${{ env.version }}
+          # Create a new version tag
+          git tag v${{ env.version }}
+          git push origin v${{ env.version }}
+
+          # Commit the changes to manifest.json and package.json
+          git add manifest.json package.json
+          git commit -m "Bump version to v${{ env.version }}"
+          git push origin HEAD

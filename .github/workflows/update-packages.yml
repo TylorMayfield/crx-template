@@ -1,0 +1,45 @@
+name: Auto Update Packages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  update-packages:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18" # You can update this to the version you prefer
+
+      - name: Delete old package-lock.json
+        run: |
+          # Remove the old package-lock.json file
+          rm -f package-lock.json
+
+      - name: Update dependencies
+        run: |
+          # Run npm update to update the dependencies and generate a new package-lock.json
+          npm update
+
+      - name: Set Git author identity
+        run: |
+          git config --global user.email "hello@otter-labs.com"
+          git config --global user.name "Release Bot"
+
+      - name: Commit changes if dependencies were updated
+        run: |
+          # Check if there are any changes in package.json or package-lock.json
+          git diff --exit-code package.json package-lock.json || (
+            git add package.json package-lock.json && 
+            git commit -m "Update dependencies" && 
+            git push origin HEAD
+          )

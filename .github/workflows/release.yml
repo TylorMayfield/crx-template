@@ -25,7 +25,7 @@ jobs:
         id: version
         run: |
           # Fetch all remote tags to ensure we are working with the most up-to-date info
-          git fetch --tags
+          git fetch --tags --force
 
           # Get the most recent tag or use "v1.2" if no tag is found
           VERSION_TAG=$(git describe --tags --abbrev=0 || echo "v1.2")
@@ -39,6 +39,11 @@ jobs:
           # Start with the initial version
           VERSION="${{ env.version }}"
           
+          echo "Checking if tag $VERSION exists..."
+
+          # Debug: List all remote tags
+          git ls-remote --tags origin
+
           # Check if the tag already exists locally or remotely
           while git show-ref --tags "v$VERSION" >/dev/null 2>&1 || git ls-remote --tags origin "v$VERSION" >/dev/null 2>&1; do
             echo "Tag v$VERSION already exists (locally or remotely). Incrementing version..."

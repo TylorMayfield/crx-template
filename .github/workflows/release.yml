@@ -38,11 +38,17 @@ jobs:
         run: |
           # Start with the initial version
           VERSION="${{ env.version }}"
-          
+
           echo "Checking if tag $VERSION exists..."
 
           # Debug: List all remote tags
           git ls-remote --tags origin
+
+          # Check if the version string is invalid or empty
+          if [[ -z "$VERSION" || "$VERSION" == *[^0-9.]*) ]]; then
+            echo "Version string is invalid or empty. Falling back to default version..."
+            VERSION="1.0"  # Fallback to a default version
+          fi
 
           # Check if the tag already exists locally or remotely
           while git show-ref --tags "v$VERSION" >/dev/null 2>&1 || git ls-remote --tags origin "v$VERSION" >/dev/null 2>&1; do

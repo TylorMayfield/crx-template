@@ -1,7 +1,7 @@
 {
   "name": "crx-template",
   "private": false,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Chrome Extension Template with Mantine UI",
   "type": "module",
   "scripts": {

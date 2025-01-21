@@ -31,14 +31,14 @@ jobs:
           echo "New version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_ENV
 
-      - name: Check if tag exists locally and increment if necessary
+      - name: Check if tag exists locally and remotely, increment if necessary
         run: |
           # Start with the initial version
           VERSION="${{ env.version }}"
-
-          # Loop to check if the tag already exists locally
-          while git show-ref --tags "v$VERSION" >/dev/null 2>&1; do
-            echo "Tag v$VERSION already exists locally. Incrementing version..."
+          
+          # Check if the tag already exists remotely
+          while git show-ref --tags "v$VERSION" >/dev/null 2>&1 || git ls-remote --tags origin "v$VERSION" >/dev/null 2>&1; do
+            echo "Tag v$VERSION already exists (locally or remotely). Incrementing version..."
             
             # Increment the version by 1 (patch version)
             VERSION_PARTS=(${VERSION//./ })

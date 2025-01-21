@@ -2,6 +2,11 @@ name: Build and Release Extension
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'The version to release (e.g., v1.4)'
+        required: true
+        default: 'v1.4'
 
 permissions:
   contents: write
@@ -12,99 +17,50 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout the repository code
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Setup Node.js environment with caching for faster builds
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "18"
           cache: "npm"
 
-      - name: Pull remote tags and generate version number (before build)
-        id: version
-        run: |
-          # Fetch all remote tags to ensure we are working with the most up-to-date info
-          git fetch --tags --force
-
-          # Get the most recent tag or use "v1.2" if no tag is found
-          VERSION_TAG=$(git describe --tags --abbrev=0 || echo "v1.2")
-          # Increment the minor version (1.3 -> 1.4)
-          VERSION=$(echo $VERSION_TAG | awk -F. -v OFS=. '{$NF++;print}' | sed 's/v//')
-          echo "New version: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_ENV
-
-      - name: Check if tag exists locally and remotely, increment if necessary
-        run: |
-          # Start with the initial version
-          VERSION="${{ env.version }}"
-
-          echo "Checking if tag $VERSION exists..."
-
-          # Debug: List all remote tags
-          git ls-remote --tags origin
-
-          # Check if the version string is empty or contains invalid characters
-          if [[ -z "$VERSION" || "$VERSION" =~ [^0-9.] ]]; then
-            echo "Version string is invalid or empty. Falling back to default version..."
-            VERSION="1.0"  # Fallback to a default version
-          fi
-
-          # Track how many increments have been made
-          MAX_INCREMENTS=50
-          INCREMENT_COUNT=0
-
-          # Remove the 'v' if present for consistent checking
-          VERSION_NO_V=${VERSION//v/}
-
-          # Check if the tag already exists locally or remotely
-          while git show-ref --tags "v$VERSION_NO_V" >/dev/null 2>&1 || git ls-remote --tags origin "v$VERSION_NO_V" >/dev/null 2>&1; do
-            echo "Tag v$VERSION_NO_V already exists (locally or remotely). Incrementing version..."
-            
-            # Increment the minor version (major.minor -> major.(minor+1))
-            VERSION_PARTS=(${VERSION_NO_V//./ })
-            MINOR_VERSION=${VERSION_PARTS[1]}
-            MINOR_VERSION=$((MINOR_VERSION + 1))
-            VERSION_NO_V="${VERSION_PARTS[0]}.$MINOR_VERSION"
-            VERSION="v$VERSION_NO_V"  # Re-add 'v' prefix for final tag
-            INCREMENT_COUNT=$((INCREMENT_COUNT + 1))
-
-            # Prevent infinite loops
-            if [[ $INCREMENT_COUNT -ge $MAX_INCREMENTS ]]; then
-              echo "Too many increments, stopping to avoid infinite loop."
-              break
-            fi
-
-            echo "New incremented version: $VERSION"
-          done
-
-          echo "Final version to be used: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_ENV
-
-          # Update the version in the manifest.json and package.json to match the new version
-          jq --arg version "$VERSION" '.version = $version' manifest.json > manifest_temp.json && mv manifest_temp.json manifest.json
-          jq --arg version "$VERSION" '.version = $version' package.json > package_temp.json && mv package_temp.json package.json
-
-          # Create the new tag with the correct version
-          git tag "$VERSION"
-          git push origin "$VERSION"
-
+      # Install dependencies with 'npm ci' for a clean install
       - name: Install dependencies
         run: npm ci
 
+      # Build the extension
       - name: Build extension
         run: npm run build
 
-      - name: Set Git author identity
+      # Set the version argument from the input parameter
+      - name: Set version from input
         run: |
-          git config --global user.email "hello@otter-labs.com"
-          git config --global user.name "Release Bot"
+          VERSION="${{ github.event.inputs.version }}"
+          echo "Version received: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_ENV
 
+      # Update version in manifest.json and package.json
+      - name: Update version in manifest.json and package.json
+        run: |
+          VERSION=${{ env.version }}
+
+          # Update version in manifest.json
+          jq --arg version "$VERSION" '.version = $version' manifest.json > manifest_temp.json && mv manifest_temp.json manifest.json
+          
+          # Update version in package.json
+          jq --arg version "$VERSION" '.version = $version' package.json > package_temp.json && mv package_temp.json package.json
+
+      # Zip the extension files from the 'dist' directory
       - name: Zip extension
         run: |
           cd dist
           zip -r ../extension.zip *
 
+      # Create a new release with the zipped extension
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v1
@@ -115,12 +71,10 @@ jobs:
           prerelease: false
           generate_release_notes: true
 
-      - name: Commit changes and push new version tag
+      # Push the new version tag to the repository
+      - name: Push new version tag
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
-          # Commit the changes to manifest.json and package.json
-          git add manifest.json package.json
-          git commit -m "Bump version to v${{ env.version }}"
-          git push origin HEAD
-
-          # Push the new version tag
-          git push origin v${{ env.version }}
+          # Ensure the tag only gets pushed for a new tag event (not on branch pushes)
+          git tag ${{ env.version }}
+          git push origin ${{ env.version }}

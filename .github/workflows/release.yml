@@ -21,47 +21,54 @@ jobs:
           node-version: "18"
           cache: "npm"
 
+      - name: Generate version number (before build)
+        id: version
+        run: |
+          # Get the most recent tag or use the current date/commit if no tag is found
+          VERSION_TAG=$(git describe --tags --abbrev=0 || echo "v1.2")
+          # Increment patch version if the tag already exists
+          VERSION=$(echo $VERSION_TAG | awk -F. -v OFS=. '{$NF++;print}' | sed 's/v//')
+          echo "New version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_ENV
+
+      - name: Check if tag exists and increment if necessary
+        run: |
+          # Start with the initial version
+          VERSION="${{ env.version }}"
+
+          # Loop to check if the tag already exists
+          while git rev-parse "v$VERSION" >/dev/null 2>&1; do
+            echo "Tag v$VERSION already exists. Incrementing version..."
+            
+            # Increment the version by 1 (patch version)
+            VERSION_PARTS=(${VERSION//./ })
+            PATCH_VERSION=${VERSION_PARTS[2]}
+            PATCH_VERSION=$((PATCH_VERSION + 1))
+            VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$PATCH_VERSION"
+            echo "New incremented version: $VERSION"
+          done
+
+          echo "Final version to be used: v$VERSION"
+          echo "version=$VERSION" >> $GITHUB_ENV
+
+          # Update the version in the manifest.json and package.json to match the new version
+          jq --arg version "$VERSION" '.version = $version' manifest.json > manifest_temp.json && mv manifest_temp.json manifest.json
+          jq --arg version "$VERSION" '.version = $version' package.json > package_temp.json && mv package_temp.json package.json
+
+          # Create the new tag with the correct version
+          git tag "v$VERSION"
+          git push origin "v$VERSION"
+
       - name: Install dependencies
         run: npm ci
 
       - name: Build extension
         run: npm run build
 
-      - name: Generate version number
-        id: version
-        run: |
-          # Get the most recent tag or use the current date/commit if no tag is found
-          VERSION_TAG=$(git describe --tags --abbrev=0 || echo "v1.2")
-          # Increment patch version
-          VERSION=$(echo $VERSION_TAG | awk -F. -v OFS=. '{$NF++;print}' | sed 's/v//')
-          echo "New version: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_ENV
-
-      - name: Update manifest.json version
-        run: |
-          # Update version in manifest.json
-          jq --arg version "${{ env.version }}" '.version = $version' manifest.json > manifest_temp.json && mv manifest_temp.json manifest.json
-
-      - name: Update package.json version
-        run: |
-          # Update version in package.json
-          jq --arg version "${{ env.version }}" '.version = $version' package.json > package_temp.json && mv package_temp.json package.json
-
       - name: Set Git author identity
         run: |
           git config --global user.email "hello@otter-labs.com"
           git config --global user.name "Release Bot"
-
-      - name: Create new version tag and push changes
-        run: |
-          # Create a new version tag
-          git tag v${{ env.version }}
-          git push origin v${{ env.version }}
-
-          # Commit the changes to manifest.json and package.json
-          git add manifest.json package.json
-          git commit -m "Bump version to v${{ env.version }}"
-          git push origin HEAD
 
       - name: Zip extension
         run: |
@@ -78,4 +85,12 @@ jobs:
           prerelease: false
           generate_release_notes: true
 
+      - name: Commit changes and push new version tag
+        run: |
+          # Commit the changes to manifest.json and package.json
+          git add manifest.json package.json
+          git commit -m "Bump version to v${{ env.version }}"
+          git push origin HEAD
 
+          # Push the new version tag
+          git push origin v${{ env.version }}

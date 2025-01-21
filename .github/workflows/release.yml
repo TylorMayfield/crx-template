@@ -31,7 +31,7 @@ jobs:
         id: version
         run: |
           # Get the most recent tag or use the current date/commit if no tag is found
-          VERSION_TAG=$(git describe --tags --abbrev=0 || echo "v1.0.1")
+          VERSION_TAG=$(git describe --tags --abbrev=0 || echo "v1.2")
           # Increment patch version
           VERSION=$(echo $VERSION_TAG | awk -F. -v OFS=. '{$NF++;print}' | sed 's/v//')
           echo "New version: $VERSION"

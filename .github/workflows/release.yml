@@ -1,80 +1,61 @@
 name: Build and Release Extension
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'The version to release (e.g., v1.4)'
-        required: true
-        default: 'v1.4'
+ workflow_dispatch:
+   inputs:
+     version:
+       description: 'Extension version (e.g., 1.4)'
+       required: true
+       type: string
+       default: '1.0'
 
 permissions:
-  contents: write
-  packages: write
+ contents: write
+ packages: write
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+ build:
+   runs-on: ubuntu-latest
 
-    steps:
-      # Checkout the repository code
-      - name: Checkout code
-        uses: actions/checkout@v3
+   steps:
+   - uses: actions/checkout@v3
 
-      # Setup Node.js environment with caching for faster builds
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "18"
-          cache: "npm"
+   - name: Setup Node.js
+     uses: actions/setup-node@v3
+     with:
+       node-version: "18"
+       cache: "npm"
 
-      # Install dependencies with 'npm ci' for a clean install
-      - name: Install dependencies
-        run: npm ci
+   - name: Validate version
+     run: |
+       VERSION="${{ inputs.version }}"
+       if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+$ ]]; then
+         echo "Invalid version format. Use X.Y (e.g., 1.4)"
+         exit 1
+       fi
 
-      # Build the extension
-      - name: Build extension
-        run: npm run build
+   - name: Update manifest versions
+     run: |
+       VERSION="${{ inputs.version }}"
+       jq --arg version "$VERSION" '.version = $version' manifest.json > manifest_temp.json
+       mv manifest_temp.json manifest.json
+       jq --arg version "$VERSION" '.version = $version' package.json > package_temp.json
+       mv package_temp.json package.json
 
-      # Set the version argument from the input parameter
-      - name: Set version from input
-        run: |
-          VERSION="${{ github.event.inputs.version }}"
-          echo "Version received: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_ENV
+   - name: Install dependencies
+     run: npm ci
 
-      # Update version in manifest.json and package.json
-      - name: Update version in manifest.json and package.json
-        run: |
-          VERSION=${{ env.version }}
+   - name: Build extension
+     run: npm run build
 
-          # Update version in manifest.json
-          jq --arg version "$VERSION" '.version = $version' manifest.json > manifest_temp.json && mv manifest_temp.json manifest.json
-          
-          # Update version in package.json
-          jq --arg version "$VERSION" '.version = $version' package.json > package_temp.json && mv package_temp.json package.json
+   - name: Zip extension
+     run: |
+       cd dist
+       zip -r ../extension.zip *
 
-      # Zip the extension files from the 'dist' directory
-      - name: Zip extension
-        run: |
-          cd dist
-          zip -r ../extension.zip *
-
-      # Create a new release with the zipped extension
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: extension.zip
-          tag_name: ${{ env.version }}
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-
-      # Push the new version tag to the repository
-      - name: Push new version tag
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          # Ensure the tag only gets pushed for a new tag event (not on branch pushes)
-          git tag ${{ env.version }}
-          git push origin ${{ env.version }}
+   - name: Create Release
+     uses: softprops/action-gh-release@v1
+     with:
+       files: extension.zip
+       tag_name: v${{ inputs.version }}
+       generate_release_notes: true
